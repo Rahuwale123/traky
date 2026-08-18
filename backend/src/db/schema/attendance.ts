@@ -1,5 +1,3 @@
-// Phase 2+: attendance & break tracking. Tables exist now so migrations stay
-// forward-compatible; no routes/services touch these in Phase 1.
 import { pgTable, uuid, text, timestamp, pgEnum, index } from "drizzle-orm/pg-core";
 import { organizations } from "./organizations";
 import { users } from "./users";

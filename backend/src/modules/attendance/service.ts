@@ -1,10 +1,10 @@
 import { and, count, desc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
 import type { Database } from "../../db/client";
-import { attendanceLogs, users } from "../../db/schema/index";
+import { attendanceLogs, breakLogs, users } from "../../db/schema/index";
 import { normalizePagination, toPaginated } from "../../utils/response";
 import { BadRequestError, ConflictError } from "../../shared/errors";
 import type { AuthUserContext } from "../../shared/types";
-import type { ListAttendanceQuery } from "./schemas";
+import type { ListAttendanceQuery, StartBreakInput } from "./schemas";
 
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -51,12 +51,62 @@ export class AttendanceService {
     });
     if (!open) throw new BadRequestError("Not currently punched in");
 
+    // Auto-close a dangling break rather than blocking punch-out on it.
+    const openBreak = await this.db.query.breakLogs.findFirst({
+      where: and(eq(breakLogs.userId, authUser.userId), isNull(breakLogs.endedAt), isNull(breakLogs.deletedAt)),
+    });
+    if (openBreak) {
+      await this.db.update(breakLogs).set({ endedAt: new Date(), updatedAt: new Date() }).where(eq(breakLogs.id, openBreak.id));
+    }
+
     const [updated] = await this.db
       .update(attendanceLogs)
       .set({ status: "PUNCHED_OUT", punchOutAt: new Date(), updatedAt: new Date() })
       .where(eq(attendanceLogs.id, open.id))
       .returning();
     if (!updated) throw new Error("Failed to punch out");
+    return updated;
+  }
+
+  async startBreak(authUser: AuthUserContext, input: StartBreakInput) {
+    const open = await this.db.query.attendanceLogs.findFirst({
+      where: and(eq(attendanceLogs.userId, authUser.userId), eq(attendanceLogs.status, "PUNCHED_IN"), isNull(attendanceLogs.deletedAt)),
+      orderBy: (log, { desc: descOrder }) => [descOrder(log.punchInAt)],
+    });
+    if (!open) throw new BadRequestError("You must be punched in to start a break");
+
+    const existingBreak = await this.db.query.breakLogs.findFirst({
+      where: and(eq(breakLogs.userId, authUser.userId), isNull(breakLogs.endedAt), isNull(breakLogs.deletedAt)),
+    });
+    if (existingBreak) throw new ConflictError("Already on a break — end it first");
+
+    const [created] = await this.db
+      .insert(breakLogs)
+      .values({
+        organizationId: authUser.organizationId,
+        userId: authUser.userId,
+        attendanceLogId: open.id,
+        reason: input.reason ?? null,
+        startedAt: new Date(),
+      })
+      .returning();
+    if (!created) throw new Error("Failed to start break");
+    return created;
+  }
+
+  async endBreak(authUser: AuthUserContext) {
+    const openBreak = await this.db.query.breakLogs.findFirst({
+      where: and(eq(breakLogs.userId, authUser.userId), isNull(breakLogs.endedAt), isNull(breakLogs.deletedAt)),
+      orderBy: (log, { desc: descOrder }) => [descOrder(log.startedAt)],
+    });
+    if (!openBreak) throw new BadRequestError("Not currently on a break");
+
+    const [updated] = await this.db
+      .update(breakLogs)
+      .set({ endedAt: new Date(), updatedAt: new Date() })
+      .where(eq(breakLogs.id, openBreak.id))
+      .returning();
+    if (!updated) throw new Error("Failed to end break");
     return updated;
   }
 
@@ -72,13 +122,38 @@ export class AttendanceService {
       orderBy: (log, { asc }) => [asc(log.punchInAt)],
     });
 
+    const breaks = await this.db.query.breakLogs.findMany({
+      where: and(
+        eq(breakLogs.userId, authUser.userId),
+        isNull(breakLogs.deletedAt),
+        gte(breakLogs.startedAt, startOfDay(now)),
+        lt(breakLogs.startedAt, endOfDay(now)),
+      ),
+      orderBy: (log, { asc }) => [asc(log.startedAt)],
+    });
+
     const currentLog = logs.find((l) => l.status === "PUNCHED_IN") ?? null;
-    const totalMinutesToday = logs.reduce((sum, l) => {
+    const currentBreak = breaks.find((b) => !b.endedAt) ?? null;
+
+    const grossMinutesToday = logs.reduce((sum, l) => {
       const end = l.punchOutAt ?? now;
       return sum + minutesBetween(l.punchInAt, end);
     }, 0);
+    const totalBreakMinutesToday = breaks.reduce((sum, b) => {
+      const end = b.endedAt ?? now;
+      return sum + minutesBetween(b.startedAt, end);
+    }, 0);
 
-    return { isPunchedIn: Boolean(currentLog), currentLog, totalMinutesToday, logs };
+    return {
+      isPunchedIn: Boolean(currentLog),
+      isOnBreak: Boolean(currentBreak),
+      currentLog,
+      currentBreak,
+      totalMinutesToday: Math.max(0, grossMinutesToday - totalBreakMinutesToday),
+      totalBreakMinutesToday,
+      logs,
+      breaks,
+    };
   }
 
   async myHistory(authUser: AuthUserContext, query: ListAttendanceQuery) {

@@ -10,11 +10,25 @@ export interface AttendanceLog {
   createdAt: string;
 }
 
+export interface BreakLog {
+  id: string;
+  organizationId: string;
+  userId: string;
+  attendanceLogId: string | null;
+  reason: string | null;
+  startedAt: string;
+  endedAt: string | null;
+}
+
 export interface TodayAttendance {
   isPunchedIn: boolean;
+  isOnBreak: boolean;
   currentLog: AttendanceLog | null;
+  currentBreak: BreakLog | null;
   totalMinutesToday: number;
+  totalBreakMinutesToday: number;
   logs: AttendanceLog[];
+  breaks: BreakLog[];
 }
 
 export interface PersonAttendanceStatus {

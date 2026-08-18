@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  endBreak,
   fetchAttendanceList,
   fetchMyHistory,
   fetchToday,
   fetchTodaySummary,
   punchIn,
   punchOut,
+  startBreak,
 } from "./api";
 import type { ListAttendanceParams } from "./types";
 
@@ -32,6 +34,22 @@ export function usePunchOut() {
       queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
       queryClient.invalidateQueries({ queryKey: ["attendance-today-summary"] });
     },
+  });
+}
+
+export function useStartBreak() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reason?: string) => startBreak(reason),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["attendance-today"] }),
+  });
+}
+
+export function useEndBreak() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: endBreak,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["attendance-today"] }),
   });
 }
 

@@ -3,6 +3,7 @@ import type { Paginated } from "../admin/types";
 import type {
   AttendanceLog,
   AttendanceTodaySummary,
+  BreakLog,
   ListAttendanceParams,
   TodayAttendance,
 } from "./types";
@@ -24,6 +25,16 @@ export async function punchOut(): Promise<AttendanceLog> {
 
 export async function fetchToday(): Promise<TodayAttendance> {
   const res = await api.get<Envelope<TodayAttendance>>("/attendance/today");
+  return res.data.data;
+}
+
+export async function startBreak(reason?: string): Promise<BreakLog> {
+  const res = await api.post<Envelope<BreakLog>>("/attendance/break/start", reason ? { reason } : {});
+  return res.data.data;
+}
+
+export async function endBreak(): Promise<BreakLog> {
+  const res = await api.post<Envelope<BreakLog>>("/attendance/break/end");
   return res.data.data;
 }
 
