@@ -5,6 +5,7 @@ import { normalizePagination, toPaginated } from "../../utils/response";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../../shared/errors";
 import { assertSameOrg } from "../../middleware/org-scope";
 import { assertOwnTeamResource } from "../../middleware/team-scope";
+import { getActorName, notify } from "../notifications/notify";
 import type { AuthUserContext } from "../../shared/types";
 import type {
   CreateCommentInput,
@@ -13,6 +14,13 @@ import type {
   UpdateTaskInput,
   UpdateTaskStatusInput,
 } from "./schemas";
+
+const STATUS_LABEL: Record<string, string> = {
+  TODO: "To do",
+  IN_PROGRESS: "In Progress",
+  REVIEW: "Review",
+  DONE: "Done",
+};
 
 export class TaskService {
   constructor(private readonly db: Database) {}
@@ -35,7 +43,7 @@ export class TaskService {
   }
 
   async create(authUser: AuthUserContext, input: CreateTaskInput) {
-    await this.getOwnedProject(authUser, input.projectId);
+    const project = await this.getOwnedProject(authUser, input.projectId);
     if (input.assigneeId) await this.assertValidAssignee(authUser, input.assigneeId);
 
     const [task] = await this.db
@@ -52,6 +60,21 @@ export class TaskService {
       })
       .returning();
     if (!task) throw new Error("Failed to create task");
+
+    if (task.assigneeId) {
+      const actorName = await getActorName(this.db, authUser.userId);
+      await notify(this.db, {
+        organizationId: authUser.organizationId,
+        recipientId: task.assigneeId,
+        actorId: authUser.userId,
+        type: "TASK_ASSIGNED",
+        title: "New task assigned",
+        body: `${actorName} assigned you "${task.title}" in ${project.name}`,
+        entityType: "task",
+        entityId: task.id,
+      });
+    }
+
     return task;
   }
 
@@ -131,6 +154,33 @@ export class TaskService {
       .where(eq(tasks.id, task.id))
       .returning();
     if (!updated) throw new NotFoundError("Task not found");
+
+    const actorName = await getActorName(this.db, authUser.userId);
+
+    if (input.assigneeId && input.assigneeId !== task.assigneeId) {
+      await notify(this.db, {
+        organizationId: authUser.organizationId,
+        recipientId: input.assigneeId,
+        actorId: authUser.userId,
+        type: "TASK_ASSIGNED",
+        title: "New task assigned",
+        body: `${actorName} assigned you "${updated.title}"`,
+        entityType: "task",
+        entityId: updated.id,
+      });
+    } else if (input.status && input.status !== task.status && updated.assigneeId) {
+      await notify(this.db, {
+        organizationId: authUser.organizationId,
+        recipientId: updated.assigneeId,
+        actorId: authUser.userId,
+        type: "TASK_STATUS_CHANGED",
+        title: "Task updated",
+        body: `${actorName} moved "${updated.title}" to ${STATUS_LABEL[updated.status]}`,
+        entityType: "task",
+        entityId: updated.id,
+      });
+    }
+
     return updated;
   }
 
@@ -146,6 +196,24 @@ export class TaskService {
       .where(eq(tasks.id, task.id))
       .returning();
     if (!updated) throw new NotFoundError("Task not found");
+
+    if (input.status !== task.status) {
+      const project = await this.db.query.projects.findFirst({ where: eq(projects.id, updated.projectId) });
+      if (project) {
+        const actorName = await getActorName(this.db, authUser.userId);
+        await notify(this.db, {
+          organizationId: authUser.organizationId,
+          recipientId: project.managerId,
+          actorId: authUser.userId,
+          type: "TASK_STATUS_CHANGED",
+          title: "Task updated",
+          body: `${actorName} moved "${updated.title}" to ${STATUS_LABEL[updated.status]}`,
+          entityType: "task",
+          entityId: updated.id,
+        });
+      }
+    }
+
     return updated;
   }
 
@@ -176,6 +244,30 @@ export class TaskService {
       })
       .returning();
     if (!comment) throw new Error("Failed to add comment");
+
+    const actorName = await getActorName(this.db, authUser.userId);
+    let recipientId: string | null = null;
+
+    if (authUser.role === "EMPLOYEE") {
+      const project = await this.db.query.projects.findFirst({ where: eq(projects.id, task.projectId) });
+      recipientId = project?.managerId ?? null;
+    } else if (task.assigneeId) {
+      recipientId = task.assigneeId;
+    }
+
+    if (recipientId) {
+      await notify(this.db, {
+        organizationId: authUser.organizationId,
+        recipientId,
+        actorId: authUser.userId,
+        type: "TASK_COMMENT",
+        title: "New comment",
+        body: `${actorName} commented on "${task.title}"`,
+        entityType: "task",
+        entityId: task.id,
+      });
+    }
+
     return comment;
   }
 }

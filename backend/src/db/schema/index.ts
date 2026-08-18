@@ -5,3 +5,4 @@ export * from "./projects";
 export * from "./tasks";
 export * from "./attendance";
 export * from "./updates";
+export * from "./notifications";

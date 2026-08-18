@@ -5,6 +5,7 @@ import { hashPassword } from "../../utils/password";
 import { normalizePagination, toPaginated } from "../../utils/response";
 import { ConflictError, NotFoundError, BadRequestError } from "../../shared/errors";
 import { assertSameOrg } from "../../middleware/org-scope";
+import { getActorName, notify } from "../notifications/notify";
 import type { AssignManagerInput, CreateEmployeeInput, CreateManagerInput, ListUsersQuery, UpdateUserInput } from "./schemas";
 
 export class UserService {
@@ -41,7 +42,7 @@ export class UserService {
     return manager;
   }
 
-  async createEmployee(organizationId: string, input: CreateEmployeeInput) {
+  async createEmployee(organizationId: string, actorId: string, input: CreateEmployeeInput) {
     await this.ensureEmailAvailable(input.email);
     if (input.designationId) await this.assertDesignationExists(input.designationId);
 
@@ -66,6 +67,21 @@ export class UserService {
       })
       .returning();
     if (!employee) throw new Error("Failed to create employee");
+
+    if (employee.managerId) {
+      const actorName = await getActorName(this.db, actorId);
+      await notify(this.db, {
+        organizationId,
+        recipientId: employee.managerId,
+        actorId,
+        type: "MEMBER_ASSIGNED",
+        title: "New team member",
+        body: `${actorName} added ${employee.fullName} to your team`,
+        entityType: "user",
+        entityId: employee.id,
+      });
+    }
+
     return employee;
   }
 
@@ -109,7 +125,7 @@ export class UserService {
     return updated;
   }
 
-  async assignManager(organizationId: string, employeeId: string, input: AssignManagerInput) {
+  async assignManager(organizationId: string, actorId: string, employeeId: string, input: AssignManagerInput) {
     const employee = await this.getById(organizationId, employeeId);
     if (employee.role !== "EMPLOYEE") throw new BadRequestError("Only employees can be assigned to a manager");
 
@@ -122,6 +138,19 @@ export class UserService {
       .where(eq(users.id, employeeId))
       .returning();
     if (!updated) throw new NotFoundError("User not found");
+
+    const actorName = await getActorName(this.db, actorId);
+    await notify(this.db, {
+      organizationId,
+      recipientId: manager.id,
+      actorId,
+      type: "MEMBER_ASSIGNED",
+      title: "New team member",
+      body: `${actorName} assigned ${updated.fullName} to your team`,
+      entityType: "user",
+      entityId: updated.id,
+    });
+
     return updated;
   }
 }

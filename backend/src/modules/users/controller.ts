@@ -24,6 +24,7 @@ export class UserController {
   createEmployee = async (request: FastifyRequest, reply: FastifyReply) => {
     const employee = await this.service.createEmployee(
       request.authUser.organizationId,
+      request.authUser.userId,
       request.body as CreateEmployeeInput,
     );
     return reply.code(201).send(ok(toSafeUser(employee)));
@@ -59,6 +60,7 @@ export class UserController {
     const { id } = request.params as { id: string };
     const user = await this.service.assignManager(
       request.authUser.organizationId,
+      request.authUser.userId,
       id,
       request.body as AssignManagerInput,
     );
