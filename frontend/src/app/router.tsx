@@ -16,6 +16,7 @@ import { AttendancePage } from "../features/attendance/components/AttendancePage
 import { MemberDetailPage } from "../features/admin/components/MemberDetailPage";
 import { DailyUpdatesPage } from "../features/daily-updates/components/DailyUpdatesPage";
 import { MyUpdatesPage } from "../features/daily-updates/components/MyUpdatesPage";
+import { MemberRequestsPage } from "../features/member-requests/components/MemberRequestsPage";
 
 function HomeRedirect() {
   const user = useAuthStore((s) => s.user);
@@ -80,6 +81,14 @@ export function AppRouter() {
           </RequireRole>
         }
       />
+      <Route
+        path="/admin/member-requests"
+        element={
+          <RequireRole role="ADMIN">
+            <MemberRequestsPage />
+          </RequireRole>
+        }
+      />
 
       <Route
         path="/manager"
@@ -134,6 +143,14 @@ export function AppRouter() {
         element={
           <RequireRole role="MANAGER">
             <DailyUpdatesPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/manager/member-requests"
+        element={
+          <RequireRole role="MANAGER">
+            <MemberRequestsPage />
           </RequireRole>
         }
       />

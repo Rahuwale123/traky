@@ -7,6 +7,8 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "TASK_STATUS_CHANGED",
   "TASK_COMMENT",
   "MEMBER_ASSIGNED",
+  "MEMBER_REQUEST_CREATED",
+  "MEMBER_REQUEST_RESPONDED",
 ]);
 
 // Per-recipient notification inbox — distinct from `activities` (a future

@@ -2,7 +2,13 @@ import { eq } from "drizzle-orm";
 import type { Database } from "../../db/client";
 import { notifications, users } from "../../db/schema/index";
 
-export type NotificationType = "TASK_ASSIGNED" | "TASK_STATUS_CHANGED" | "TASK_COMMENT" | "MEMBER_ASSIGNED";
+export type NotificationType =
+  | "TASK_ASSIGNED"
+  | "TASK_STATUS_CHANGED"
+  | "TASK_COMMENT"
+  | "MEMBER_ASSIGNED"
+  | "MEMBER_REQUEST_CREATED"
+  | "MEMBER_REQUEST_RESPONDED";
 
 interface NotifyParams {
   organizationId: string;

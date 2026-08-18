@@ -28,7 +28,7 @@ export function AttendancePage() {
   const navItems = isAdmin ? adminNavItems : managerNavItems;
   const teamPath = isAdmin ? "/admin/team" : "/manager/team";
 
-  const orgUsers = useUsers({ pageSize: 100 });
+  const orgUsers = useUsers({ pageSize: 100 }, { enabled: isAdmin });
   const myTeam = useMyTeam({ pageSize: 100 });
   const summary = useAttendanceTodaySummary();
 

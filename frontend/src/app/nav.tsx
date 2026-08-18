@@ -1,4 +1,13 @@
-import { BuildingIcon, ClockIcon, HomeIcon, LayersIcon, ListChecksIcon, NoteIcon, UsersIcon } from "../components/ui/icons";
+import {
+  BuildingIcon,
+  ClockIcon,
+  HomeIcon,
+  LayersIcon,
+  ListChecksIcon,
+  NoteIcon,
+  UserPlusIcon,
+  UsersIcon,
+} from "../components/ui/icons";
 import type { NavItem } from "./layout/Sidebar";
 
 export const adminNavItems: NavItem[] = [
@@ -6,6 +15,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Team", to: "/admin/team", icon: <UsersIcon /> },
   { label: "Attendance", to: "/admin/attendance", icon: <ClockIcon /> },
   { label: "Daily Updates", to: "/admin/daily-updates", icon: <NoteIcon /> },
+  { label: "Requests", to: "/admin/member-requests", icon: <UserPlusIcon /> },
   { label: "Organization", to: "/admin/organization", icon: <BuildingIcon /> },
 ];
 
@@ -15,6 +25,7 @@ export const managerNavItems: NavItem[] = [
   { label: "My Team", to: "/manager/team", icon: <UsersIcon /> },
   { label: "Attendance", to: "/manager/attendance", icon: <ClockIcon /> },
   { label: "Daily Updates", to: "/manager/daily-updates", icon: <NoteIcon /> },
+  { label: "Requests", to: "/manager/member-requests", icon: <UserPlusIcon /> },
 ];
 
 export const employeeNavItems: NavItem[] = [

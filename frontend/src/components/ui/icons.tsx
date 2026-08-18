@@ -142,6 +142,16 @@ export function NoteIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function UserPlusIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M2.8 19a6.2 6.2 0 0 1 12.4 0" />
+      <path d="M18.5 8v6M21.5 11h-6" />
+    </svg>
+  );
+}
+
 export function BellIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base(props)}>

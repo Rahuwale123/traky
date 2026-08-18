@@ -23,7 +23,7 @@ export function DailyUpdatesPage() {
   const isAdmin = user?.role === "ADMIN";
   const navItems = isAdmin ? adminNavItems : managerNavItems;
 
-  const orgUsers = useUsers({ pageSize: 100 });
+  const orgUsers = useUsers({ pageSize: 100 }, { enabled: isAdmin });
   const myTeam = useMyTeam({ pageSize: 100 });
   const summary = useUpdatesTodaySummary();
 

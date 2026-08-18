@@ -26,8 +26,12 @@ export function useUpdateOrganization() {
   });
 }
 
-export function useUsers(params: ListUsersParams) {
-  return useQuery({ queryKey: ["users", params], queryFn: () => listUsers(params) });
+export function useUsers(params: ListUsersParams, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["users", params],
+    queryFn: () => listUsers(params),
+    enabled: options.enabled ?? true,
+  });
 }
 
 export function useMyTeam(params: ListUsersParams = {}) {

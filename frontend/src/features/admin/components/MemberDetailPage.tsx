@@ -56,7 +56,7 @@ export function MemberDetailPage() {
 
   const adminUser = useUser(isAdmin ? id : undefined);
   const team = useMyTeam({ pageSize: 100 });
-  const orgUsers = useUsers({ pageSize: 100 });
+  const orgUsers = useUsers({ pageSize: 100 }, { enabled: isAdmin });
   const designations = useDesignations();
   const updateDesignation = useUpdateUserDesignation();
   const tasksQuery = useTasks({ pageSize: 200 });
