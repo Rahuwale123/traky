@@ -10,6 +10,7 @@ import jwtPlugin from "./plugins/jwt";
 import cookiePlugin from "./plugins/cookie";
 import corsPlugin from "./plugins/cors";
 import rateLimitPlugin from "./plugins/rate-limit";
+import websocketSupport from "./plugins/websocket";
 
 import authRoutes from "./modules/auth/routes";
 import organizationRoutes from "./modules/organizations/routes";
@@ -21,6 +22,7 @@ import designationRoutes from "./modules/designations/routes";
 import dailyUpdateRoutes from "./modules/daily-updates/routes";
 import notificationRoutes from "./modules/notifications/routes";
 import memberRequestRoutes from "./modules/member-requests/routes";
+import chatRoutes from "./modules/chat/routes";
 
 export async function buildApp() {
   const app = Fastify({
@@ -39,6 +41,7 @@ export async function buildApp() {
   await app.register(dbPlugin);
   await app.register(redisPlugin);
   await app.register(jwtPlugin);
+  await app.register(websocketSupport);
 
   // Must be registered before the route plugins below — Fastify resolves a
   // nested context's error/404 handler from what its parent had at the time
@@ -75,6 +78,7 @@ export async function buildApp() {
       await api.register(dailyUpdateRoutes, { prefix: "/daily-updates" });
       await api.register(notificationRoutes, { prefix: "/notifications" });
       await api.register(memberRequestRoutes, { prefix: "/member-requests" });
+      await api.register(chatRoutes, { prefix: "/chat" });
     },
     { prefix: "/api/v1" },
   );

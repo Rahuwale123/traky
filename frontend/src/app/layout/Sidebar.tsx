@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import { useLogout } from "../../features/auth/hooks";
+import { useChatUnreadCount } from "../../features/chat/hooks";
 import { Avatar } from "../../components/ui/Avatar";
 import { LogOutIcon } from "../../components/ui/icons";
 import { cn } from "../../lib/utils";
@@ -11,11 +12,13 @@ export interface NavItem {
   to: string;
   icon: ReactNode;
   end?: boolean;
+  badge?: "chat";
 }
 
 export function Sidebar({ items }: { items: NavItem[] }) {
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
+  const chatUnread = useChatUnreadCount().data ?? 0;
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-black/5 px-4 py-6">
@@ -40,7 +43,12 @@ export function Sidebar({ items }: { items: NavItem[] }) {
             }
           >
             {item.icon}
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.badge === "chat" && chatUnread > 0 ? (
+              <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                {chatUnread > 9 ? "9+" : chatUnread}
+              </span>
+            ) : null}
           </NavLink>
         ))}
       </nav>

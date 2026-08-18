@@ -17,6 +17,7 @@ import { MemberDetailPage } from "../features/admin/components/MemberDetailPage"
 import { DailyUpdatesPage } from "../features/daily-updates/components/DailyUpdatesPage";
 import { MyUpdatesPage } from "../features/daily-updates/components/MyUpdatesPage";
 import { MemberRequestsPage } from "../features/member-requests/components/MemberRequestsPage";
+import { ChatPage } from "../features/chat/components/ChatPage";
 
 function HomeRedirect() {
   const user = useAuthStore((s) => s.user);
@@ -89,6 +90,14 @@ export function AppRouter() {
           </RequireRole>
         }
       />
+      <Route
+        path="/admin/chat"
+        element={
+          <RequireRole role="ADMIN">
+            <ChatPage />
+          </RequireRole>
+        }
+      />
 
       <Route
         path="/manager"
@@ -154,6 +163,14 @@ export function AppRouter() {
           </RequireRole>
         }
       />
+      <Route
+        path="/manager/chat"
+        element={
+          <RequireRole role="MANAGER">
+            <ChatPage />
+          </RequireRole>
+        }
+      />
 
       <Route
         path="/employee"
@@ -176,6 +193,14 @@ export function AppRouter() {
         element={
           <RequireRole role="EMPLOYEE">
             <MyUpdatesPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/employee/chat"
+        element={
+          <RequireRole role="EMPLOYEE">
+            <ChatPage />
           </RequireRole>
         }
       />

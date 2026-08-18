@@ -1,5 +1,6 @@
 import {
   BuildingIcon,
+  ChatIcon,
   ClockIcon,
   HomeIcon,
   LayersIcon,
@@ -15,6 +16,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Team", to: "/admin/team", icon: <UsersIcon /> },
   { label: "Attendance", to: "/admin/attendance", icon: <ClockIcon /> },
   { label: "Daily Updates", to: "/admin/daily-updates", icon: <NoteIcon /> },
+  { label: "Chat", to: "/admin/chat", icon: <ChatIcon />, badge: "chat" },
   { label: "Requests", to: "/admin/member-requests", icon: <UserPlusIcon /> },
   { label: "Organization", to: "/admin/organization", icon: <BuildingIcon /> },
 ];
@@ -25,6 +27,7 @@ export const managerNavItems: NavItem[] = [
   { label: "My Team", to: "/manager/team", icon: <UsersIcon /> },
   { label: "Attendance", to: "/manager/attendance", icon: <ClockIcon /> },
   { label: "Daily Updates", to: "/manager/daily-updates", icon: <NoteIcon /> },
+  { label: "Chat", to: "/manager/chat", icon: <ChatIcon />, badge: "chat" },
   { label: "Requests", to: "/manager/member-requests", icon: <UserPlusIcon /> },
 ];
 
@@ -32,4 +35,5 @@ export const employeeNavItems: NavItem[] = [
   { label: "Dashboard", to: "/employee", icon: <HomeIcon />, end: true },
   { label: "My Tasks", to: "/employee/tasks", icon: <ListChecksIcon /> },
   { label: "My Updates", to: "/employee/updates", icon: <NoteIcon /> },
+  { label: "Chat", to: "/employee/chat", icon: <ChatIcon />, badge: "chat" },
 ];
