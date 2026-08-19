@@ -45,13 +45,18 @@ export function LoginPage() {
             error={errors.email?.message}
             {...register("email")}
           />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            error={errors.password?.message}
-            {...register("password")}
-          />
+          <div className="flex flex-col gap-1.5">
+            <Input
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              error={errors.password?.message}
+              {...register("password")}
+            />
+            <Link to="/forgot-password" className="self-end text-xs font-medium text-accent hover:text-accent-hover">
+              Forgot password?
+            </Link>
+          </div>
 
           {login.isError ? (
             <p className="rounded-2xl bg-rose-50 px-4 py-2.5 text-sm text-rose-600">

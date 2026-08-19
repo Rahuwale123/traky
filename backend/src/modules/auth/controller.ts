@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { AuthService } from "./service";
 import { ok } from "../../utils/response";
 import { env } from "../../config/env";
-import type { LoginInput, RegisterOrgInput } from "./schemas";
+import type { ForgotPasswordInput, LoginInput, RegisterOrgInput, ResetPasswordInput } from "./schemas";
 
 const REFRESH_COOKIE = "traky_refresh_token";
 
@@ -51,5 +51,15 @@ export class AuthController {
 
   me = async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.send(ok({ authUser: request.authUser }));
+  };
+
+  forgotPassword = async (request: FastifyRequest, reply: FastifyReply) => {
+    await this.service.forgotPassword(request.body as ForgotPasswordInput);
+    return reply.send(ok({ sent: true }));
+  };
+
+  resetPassword = async (request: FastifyRequest, reply: FastifyReply) => {
+    await this.service.resetPassword(request.body as ResetPasswordInput);
+    return reply.send(ok({ reset: true }));
   };
 }

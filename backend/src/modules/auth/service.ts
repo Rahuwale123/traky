@@ -6,11 +6,13 @@ import type { FastifyInstance } from "fastify";
 import { organizations, users } from "../../db/schema/index";
 import { hashPassword, verifyPassword } from "../../utils/password";
 import { parseDurationSeconds } from "../../utils/duration";
-import { ConflictError, UnauthorizedError } from "../../shared/errors";
+import { BadRequestError, ConflictError, UnauthorizedError } from "../../shared/errors";
 import { REDIS_KEYS } from "../../shared/constants";
 import { env } from "../../config/env";
 import type { AuthUserContext } from "../../shared/types";
-import type { LoginInput, RegisterOrgInput } from "./schemas";
+import type { ForgotPasswordInput, LoginInput, RegisterOrgInput, ResetPasswordInput } from "./schemas";
+
+const PASSWORD_RESET_TTL_SECONDS = 30 * 60;
 
 function slugify(name: string): string {
   return (
@@ -110,6 +112,35 @@ export class AuthService {
     if (refreshToken) {
       await this.redis.del(REDIS_KEYS.refreshToken(refreshToken));
     }
+  }
+
+  /** Always resolves the same way regardless of whether the email matched an account, so the response never leaks which emails are registered. */
+  async forgotPassword(input: ForgotPasswordInput) {
+    const user = await this.db.query.users.findFirst({ where: eq(users.email, input.email) });
+    if (!user || user.deletedAt || !user.isActive) return;
+
+    const token = randomUUID() + randomUUID();
+    await this.redis.set(REDIS_KEYS.passwordReset(token), user.id, "EX", PASSWORD_RESET_TTL_SECONDS);
+
+    const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+    await this.app.mailer.sendMail({
+      to: user.email,
+      subject: "Reset your Traky password",
+      text: `We received a request to reset your Traky password. Use this link within 30 minutes:\n\n${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.`,
+      html: `<p>We received a request to reset your Traky password. Click the link below within 30 minutes:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, you can safely ignore this email.</p>`,
+    });
+  }
+
+  async resetPassword(input: ResetPasswordInput) {
+    const userId = await this.redis.get(REDIS_KEYS.passwordReset(input.token));
+    if (!userId) throw new BadRequestError("This reset link is invalid or has expired");
+
+    const user = await this.db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!user || user.deletedAt || !user.isActive) throw new BadRequestError("This reset link is invalid or has expired");
+
+    const passwordHash = await hashPassword(input.newPassword);
+    await this.db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, user.id));
+    await this.redis.del(REDIS_KEYS.passwordReset(input.token));
   }
 
   private async issueSession(user: typeof users.$inferSelect) {

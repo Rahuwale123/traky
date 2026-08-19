@@ -3,6 +3,8 @@ import { useAuthStore } from "../stores/authStore";
 import { RequireRole } from "./RequireRole";
 import { LoginPage } from "../features/auth/components/LoginPage";
 import { RegisterOrgPage } from "../features/auth/components/RegisterOrgPage";
+import { ForgotPasswordPage } from "../features/auth/components/ForgotPasswordPage";
+import { ResetPasswordPage } from "../features/auth/components/ResetPasswordPage";
 import { AdminDashboardPage } from "../features/dashboard/components/AdminDashboardPage";
 import { ManagerDashboardPage } from "../features/dashboard/components/ManagerDashboardPage";
 import { EmployeeDashboardPage } from "../features/dashboard/components/EmployeeDashboardPage";
@@ -33,6 +35,8 @@ export function AppRouter() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterOrgPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route
         path="/admin"

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { login, logout, registerOrg } from "./api";
+import { forgotPassword, login, logout, registerOrg, resetPassword } from "./api";
 import { useAuthStore } from "../../stores/authStore";
 import type { LoginPayload, RegisterOrgPayload } from "./types";
 
@@ -48,5 +48,19 @@ export function useLogout() {
       queryClient.clear();
       navigate("/login", { replace: true });
     },
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (email: string) => forgotPassword(email),
+  });
+}
+
+export function useResetPassword() {
+  const navigate = useNavigate();
+  return useMutation({
+    mutationFn: ({ token, newPassword }: { token: string; newPassword: string }) => resetPassword(token, newPassword),
+    onSuccess: () => navigate("/login", { replace: true }),
   });
 }

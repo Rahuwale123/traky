@@ -11,6 +11,7 @@ import cookiePlugin from "./plugins/cookie";
 import corsPlugin from "./plugins/cors";
 import rateLimitPlugin from "./plugins/rate-limit";
 import websocketSupport from "./plugins/websocket";
+import mailerPlugin from "./plugins/mailer";
 
 import authRoutes from "./modules/auth/routes";
 import organizationRoutes from "./modules/organizations/routes";
@@ -42,6 +43,7 @@ export async function buildApp() {
   await app.register(redisPlugin);
   await app.register(jwtPlugin);
   await app.register(websocketSupport);
+  await app.register(mailerPlugin);
 
   // Must be registered before the route plugins below — Fastify resolves a
   // nested context's error/404 handler from what its parent had at the time

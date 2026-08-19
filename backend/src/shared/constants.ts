@@ -12,6 +12,7 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export const REDIS_KEYS = {
   refreshToken: (jti: string) => `refresh:${jti}`,
+  passwordReset: (token: string) => `pwreset:${token}`,
 };
 
 export const DEFAULT_PAGE_SIZE = 20;
