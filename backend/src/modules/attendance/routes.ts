@@ -9,20 +9,20 @@ export default async function attendanceRoutes(app: FastifyInstance) {
   const service = new AttendanceService(app.db);
   const controller = new AttendanceController(service);
 
-  // Self-service punch clock — managers and employees only (admins don't log hours).
-  app.post("/punch-in", { preHandler: [authenticate, authorize(["MANAGER", "EMPLOYEE"])] }, controller.punchIn);
-  app.post("/punch-out", { preHandler: [authenticate, authorize(["MANAGER", "EMPLOYEE"])] }, controller.punchOut);
+  // Self-service punch clock — every role logs their own hours.
+  app.post("/punch-in", { preHandler: [authenticate, authorize(["ADMIN", "MANAGER", "EMPLOYEE"])] }, controller.punchIn);
+  app.post("/punch-out", { preHandler: [authenticate, authorize(["ADMIN", "MANAGER", "EMPLOYEE"])] }, controller.punchOut);
   app.post(
     "/break/start",
-    { preHandler: [authenticate, authorize(["MANAGER", "EMPLOYEE"])], schema: { body: startBreakSchema } },
+    { preHandler: [authenticate, authorize(["ADMIN", "MANAGER", "EMPLOYEE"])], schema: { body: startBreakSchema } },
     controller.startBreak,
   );
-  app.post("/break/end", { preHandler: [authenticate, authorize(["MANAGER", "EMPLOYEE"])] }, controller.endBreak);
-  app.get("/today", { preHandler: [authenticate, authorize(["MANAGER", "EMPLOYEE"])] }, controller.today);
+  app.post("/break/end", { preHandler: [authenticate, authorize(["ADMIN", "MANAGER", "EMPLOYEE"])] }, controller.endBreak);
+  app.get("/today", { preHandler: [authenticate, authorize(["ADMIN", "MANAGER", "EMPLOYEE"])] }, controller.today);
   app.get(
     "/me",
     {
-      preHandler: [authenticate, authorize(["MANAGER", "EMPLOYEE"])],
+      preHandler: [authenticate, authorize(["ADMIN", "MANAGER", "EMPLOYEE"])],
       schema: { querystring: listAttendanceQuerySchema },
     },
     controller.myHistory,

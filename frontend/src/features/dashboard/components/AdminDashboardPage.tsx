@@ -14,6 +14,7 @@ import { dateRangeSubtitlePhrase, resolveDateRange, type DateRange } from "../..
 import { useOrganization, useUsers } from "../../admin/hooks";
 import { useProjects } from "../../projects/hooks";
 import { useTasks } from "../../tasks/hooks";
+import { PunchClock } from "../../attendance/components/PunchClock";
 import { countByStatus, filterTasksByRange, overdueCount, projectProgress, workloadByAssignee } from "../statsUtils";
 
 export function AdminDashboardPage() {
@@ -36,6 +37,10 @@ export function AdminDashboardPage() {
   return (
     <AppShell navItems={adminNavItems}>
       <PageHeader crumbs={["Home", "Dashboard"]} title={`Welcome back, ${user?.fullName.split(" ")[0] ?? ""}`} />
+
+      <div className="mb-6">
+        <PunchClock />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <TintedCard

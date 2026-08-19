@@ -50,7 +50,7 @@ export function AttendancePage() {
   if (!isAdmin && user) nameById.set(user.id, user.fullName);
 
   const filterablePeople = isAdmin
-    ? people.filter((u) => u.role === "MANAGER" || u.role === "EMPLOYEE")
+    ? people.filter((u) => u.role === "ADMIN" || u.role === "MANAGER" || u.role === "EMPLOYEE")
     : [...(user ? [{ id: user.id, fullName: user.fullName }] : []), ...people];
 
   const handleExport = async () => {

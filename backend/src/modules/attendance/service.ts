@@ -227,11 +227,14 @@ export class AttendanceService {
     const dayEnd = endOfDayInTimeZone(now, timezone);
     const scopedIds = await this.scopedUserIds(authUser);
 
+    // Includes ADMIN so an admin's own punch-in status shows up in their own
+    // org-wide summary — a manager's scoped view already only ever includes
+    // people on their own team, so this can't leak an admin into it.
     const people = await this.db.query.users.findMany({
       where: and(
         eq(users.organizationId, authUser.organizationId),
         isNull(users.deletedAt),
-        inArray(users.role, ["MANAGER", "EMPLOYEE"]),
+        inArray(users.role, ["ADMIN", "MANAGER", "EMPLOYEE"]),
       ),
       columns: { id: true, fullName: true, role: true, managerId: true },
     });
