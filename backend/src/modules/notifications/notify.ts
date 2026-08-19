@@ -8,7 +8,10 @@ export type NotificationType =
   | "TASK_COMMENT"
   | "MEMBER_ASSIGNED"
   | "MEMBER_REQUEST_CREATED"
-  | "MEMBER_REQUEST_RESPONDED";
+  | "MEMBER_REQUEST_RESPONDED"
+  | "RESOURCE_PENDING_APPROVAL"
+  | "RESOURCE_APPROVED"
+  | "RESOURCE_REJECTED";
 
 interface NotifyParams {
   organizationId: string;

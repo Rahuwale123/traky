@@ -18,7 +18,11 @@ export type ActivityType =
   | "MEMBER_REQUEST_RESPONDED"
   | "DESIGNATION_CREATED"
   | "DESIGNATION_UPDATED"
-  | "ORGANIZATION_UPDATED";
+  | "ORGANIZATION_UPDATED"
+  | "RESOURCE_SHARED"
+  | "RESOURCE_SUBMITTED"
+  | "RESOURCE_APPROVED"
+  | "RESOURCE_REJECTED";
 
 interface RecordActivityParams {
   organizationId: string;

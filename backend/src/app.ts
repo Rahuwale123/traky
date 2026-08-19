@@ -26,6 +26,7 @@ import notificationRoutes from "./modules/notifications/routes";
 import memberRequestRoutes from "./modules/member-requests/routes";
 import chatRoutes from "./modules/chat/routes";
 import activityRoutes from "./modules/activities/routes";
+import knowledgeRoutes from "./modules/knowledge/routes";
 
 export async function buildApp() {
   const app = Fastify({
@@ -88,6 +89,7 @@ export async function buildApp() {
       await api.register(memberRequestRoutes, { prefix: "/member-requests" });
       await api.register(chatRoutes, { prefix: "/chat" });
       await api.register(activityRoutes, { prefix: "/activities" });
+      await api.register(knowledgeRoutes, { prefix: "/knowledge" });
     },
     { prefix: "/api/v1" },
   );

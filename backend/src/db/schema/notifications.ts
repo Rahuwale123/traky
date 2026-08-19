@@ -9,10 +9,13 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "MEMBER_ASSIGNED",
   "MEMBER_REQUEST_CREATED",
   "MEMBER_REQUEST_RESPONDED",
+  "RESOURCE_PENDING_APPROVAL",
+  "RESOURCE_APPROVED",
+  "RESOURCE_REJECTED",
 ]);
 
-// Per-recipient notification inbox — distinct from `activities` (a future
-// generic org-wide audit log). Every row here is addressed to exactly one person.
+// Per-recipient notification inbox — distinct from `activities` (the
+// admin-facing org-wide audit log). Every row here is addressed to exactly one person.
 export const notifications = pgTable(
   "notifications",
   {

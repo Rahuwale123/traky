@@ -8,3 +8,4 @@ export * from "./updates";
 export * from "./notifications";
 export * from "./member-requests";
 export * from "./chat";
+export * from "./knowledge";

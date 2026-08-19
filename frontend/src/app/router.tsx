@@ -21,6 +21,7 @@ import { MyUpdatesPage } from "../features/daily-updates/components/MyUpdatesPag
 import { MemberRequestsPage } from "../features/member-requests/components/MemberRequestsPage";
 import { ChatPage } from "../features/chat/components/ChatPage";
 import { ActivityLogPage } from "../features/activities/components/ActivityLogPage";
+import { KnowledgeBasePage } from "../features/knowledge/components/KnowledgeBasePage";
 
 function HomeRedirect() {
   const user = useAuthStore((s) => s.user);
@@ -111,6 +112,14 @@ export function AppRouter() {
           </RequireRole>
         }
       />
+      <Route
+        path="/admin/knowledge"
+        element={
+          <RequireRole role="ADMIN">
+            <KnowledgeBasePage />
+          </RequireRole>
+        }
+      />
 
       <Route
         path="/manager"
@@ -177,6 +186,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/manager/knowledge"
+        element={
+          <RequireRole role="MANAGER">
+            <KnowledgeBasePage />
+          </RequireRole>
+        }
+      />
+      <Route
         path="/manager/chat"
         element={
           <RequireRole role="MANAGER">
@@ -214,6 +231,14 @@ export function AppRouter() {
         element={
           <RequireRole role="EMPLOYEE">
             <ChatPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/employee/knowledge"
+        element={
+          <RequireRole role="EMPLOYEE">
+            <KnowledgeBasePage />
           </RequireRole>
         }
       />
