@@ -43,6 +43,13 @@
       "when": 1787066319821,
       "tag": "0005_lyrical_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787111114671,
+      "tag": "0006_brown_enchantress",
+      "breakpoints": true
     }
   ]
 }

@@ -22,7 +22,13 @@ export interface Organization {
   id: string;
   name: string;
   slug: string;
+  timezone: string;
   createdAt: string;
+}
+
+export interface UpdateOrganizationPayload {
+  name?: string;
+  timezone?: string;
 }
 
 export interface Paginated<T> {

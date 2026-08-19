@@ -1,23 +1,26 @@
 import { and, count, desc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
 import type { Database } from "../../db/client";
-import { dailyUpdates, users } from "../../db/schema/index";
+import { dailyUpdates, organizations, users } from "../../db/schema/index";
 import { normalizePagination, toPaginated } from "../../utils/response";
+import { dateStringInTimeZone, nextDateString } from "../../utils/timezone";
 import type { AuthUserContext } from "../../shared/types";
 import type { ListDailyUpdatesQuery, UpsertTodayUpdateInput } from "./schemas";
-
-function todayDateString(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 export class DailyUpdateService {
   constructor(private readonly db: Database) {}
 
+  /** "Today" is computed in the org's own timezone, not the server's. */
+  private async getOrgTimezone(organizationId: string): Promise<string> {
+    const org = await this.db.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+      columns: { timezone: true },
+    });
+    return org?.timezone ?? "UTC";
+  }
+
   async upsertToday(authUser: AuthUserContext, input: UpsertTodayUpdateInput) {
-    const today = todayDateString();
+    const timezone = await this.getOrgTimezone(authUser.organizationId);
+    const today = dateStringInTimeZone(timezone);
     const existing = await this.db.query.dailyUpdates.findFirst({
       where: and(eq(dailyUpdates.userId, authUser.userId), eq(dailyUpdates.date, today), isNull(dailyUpdates.deletedAt)),
     });
@@ -53,7 +56,8 @@ export class DailyUpdateService {
   }
 
   async today(authUser: AuthUserContext) {
-    const today = todayDateString();
+    const timezone = await this.getOrgTimezone(authUser.organizationId);
+    const today = dateStringInTimeZone(timezone);
     const update = await this.db.query.dailyUpdates.findFirst({
       where: and(eq(dailyUpdates.userId, authUser.userId), eq(dailyUpdates.date, today), isNull(dailyUpdates.deletedAt)),
     });
@@ -64,7 +68,7 @@ export class DailyUpdateService {
     const { page, pageSize, offset } = normalizePagination(query.page, query.pageSize);
     const conditions = [eq(dailyUpdates.userId, authUser.userId), isNull(dailyUpdates.deletedAt)];
     if (query.startDate && query.endDate) {
-      conditions.push(gte(dailyUpdates.date, query.startDate), lt(dailyUpdates.date, addOneDay(query.endDate)));
+      conditions.push(gte(dailyUpdates.date, query.startDate), lt(dailyUpdates.date, nextDateString(query.endDate)));
     }
     const where = and(...conditions);
 
@@ -94,7 +98,7 @@ export class DailyUpdateService {
     if (scopedIds) conditions.push(inArray(dailyUpdates.userId, scopedIds));
     if (query.userId) conditions.push(eq(dailyUpdates.userId, query.userId));
     if (query.startDate && query.endDate) {
-      conditions.push(gte(dailyUpdates.date, query.startDate), lt(dailyUpdates.date, addOneDay(query.endDate)));
+      conditions.push(gte(dailyUpdates.date, query.startDate), lt(dailyUpdates.date, nextDateString(query.endDate)));
     }
     const where = and(...conditions);
 
@@ -124,7 +128,8 @@ export class DailyUpdateService {
       return { totalPeople: 0, submittedCount: 0, rate: 0, people: [] };
     }
 
-    const today = todayDateString();
+    const timezone = await this.getOrgTimezone(authUser.organizationId);
+    const today = dateStringInTimeZone(timezone);
     const updates = await this.db.query.dailyUpdates.findMany({
       where: and(
         eq(dailyUpdates.organizationId, authUser.organizationId),
@@ -151,13 +156,4 @@ export class DailyUpdateService {
       people: peopleStatus,
     };
   }
-}
-
-function addOneDay(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + 1);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
 }

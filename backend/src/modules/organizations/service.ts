@@ -17,7 +17,11 @@ export class OrganizationService {
     await this.getById(organizationId);
     const [updated] = await this.db
       .update(organizations)
-      .set({ name: input.name, updatedAt: new Date() })
+      .set({
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.timezone !== undefined ? { timezone: input.timezone } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(organizations.id, organizationId))
       .returning();
     if (!updated) throw new NotFoundError("Organization not found");

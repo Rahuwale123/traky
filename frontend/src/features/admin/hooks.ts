@@ -12,7 +12,7 @@ import {
   updateUserActive,
   updateUserDesignation,
 } from "./api";
-import type { CreateEmployeePayload, CreateManagerPayload, ListUsersParams } from "./types";
+import type { CreateEmployeePayload, CreateManagerPayload, ListUsersParams, UpdateOrganizationPayload } from "./types";
 
 export function useOrganization() {
   return useQuery({ queryKey: ["organization"], queryFn: fetchOrganization });
@@ -21,7 +21,7 @@ export function useOrganization() {
 export function useUpdateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) => updateOrganization(name),
+    mutationFn: (payload: UpdateOrganizationPayload) => updateOrganization(payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["organization"] }),
   });
 }

@@ -7,6 +7,7 @@ import type {
   Organization,
   OrgUser,
   Paginated,
+  UpdateOrganizationPayload,
 } from "./types";
 
 interface Envelope<T> {
@@ -19,8 +20,8 @@ export async function fetchOrganization(): Promise<Organization> {
   return res.data.data;
 }
 
-export async function updateOrganization(name: string): Promise<Organization> {
-  const res = await api.patch<Envelope<Organization>>("/organizations/me", { name });
+export async function updateOrganization(payload: UpdateOrganizationPayload): Promise<Organization> {
+  const res = await api.patch<Envelope<Organization>>("/organizations/me", payload);
   return res.data.data;
 }
 

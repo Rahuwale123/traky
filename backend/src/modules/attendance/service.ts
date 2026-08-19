@@ -1,22 +1,11 @@
 import { and, count, desc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
 import type { Database } from "../../db/client";
-import { attendanceLogs, breakLogs, users } from "../../db/schema/index";
+import { attendanceLogs, breakLogs, organizations, users } from "../../db/schema/index";
 import { normalizePagination, toPaginated } from "../../utils/response";
 import { BadRequestError, ConflictError } from "../../shared/errors";
+import { endOfDateStringInTimeZone, endOfDayInTimeZone, startOfDateStringInTimeZone, startOfDayInTimeZone } from "../../utils/timezone";
 import type { AuthUserContext } from "../../shared/types";
 import type { ListAttendanceQuery, StartBreakInput } from "./schemas";
-
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function endOfDay(d: Date): Date {
-  return new Date(startOfDay(d).getTime() + 24 * 60 * 60 * 1000);
-}
-
-function parseDateParam(date: string): Date {
-  return new Date(`${date}T00:00:00`);
-}
 
 function minutesBetween(start: Date, end: Date): number {
   return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60_000));
@@ -24,6 +13,15 @@ function minutesBetween(start: Date, end: Date): number {
 
 export class AttendanceService {
   constructor(private readonly db: Database) {}
+
+  /** Every "today"/date-filter boundary in this service is computed in the org's own timezone, not the server's. */
+  private async getOrgTimezone(organizationId: string): Promise<string> {
+    const org = await this.db.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+      columns: { timezone: true },
+    });
+    return org?.timezone ?? "UTC";
+  }
 
   async punchIn(authUser: AuthUserContext) {
     const open = await this.db.query.attendanceLogs.findFirst({
@@ -112,12 +110,16 @@ export class AttendanceService {
 
   async today(authUser: AuthUserContext) {
     const now = new Date();
+    const timezone = await this.getOrgTimezone(authUser.organizationId);
+    const dayStart = startOfDayInTimeZone(now, timezone);
+    const dayEnd = endOfDayInTimeZone(now, timezone);
+
     const logs = await this.db.query.attendanceLogs.findMany({
       where: and(
         eq(attendanceLogs.userId, authUser.userId),
         isNull(attendanceLogs.deletedAt),
-        gte(attendanceLogs.punchInAt, startOfDay(now)),
-        lt(attendanceLogs.punchInAt, endOfDay(now)),
+        gte(attendanceLogs.punchInAt, dayStart),
+        lt(attendanceLogs.punchInAt, dayEnd),
       ),
       orderBy: (log, { asc }) => [asc(log.punchInAt)],
     });
@@ -126,8 +128,8 @@ export class AttendanceService {
       where: and(
         eq(breakLogs.userId, authUser.userId),
         isNull(breakLogs.deletedAt),
-        gte(breakLogs.startedAt, startOfDay(now)),
-        lt(breakLogs.startedAt, endOfDay(now)),
+        gte(breakLogs.startedAt, dayStart),
+        lt(breakLogs.startedAt, dayEnd),
       ),
       orderBy: (log, { asc }) => [asc(log.startedAt)],
     });
@@ -160,8 +162,11 @@ export class AttendanceService {
     const { page, pageSize, offset } = normalizePagination(query.page, query.pageSize);
     const conditions = [eq(attendanceLogs.userId, authUser.userId), isNull(attendanceLogs.deletedAt)];
     if (query.date) {
-      const day = parseDateParam(query.date);
-      conditions.push(gte(attendanceLogs.punchInAt, startOfDay(day)), lt(attendanceLogs.punchInAt, endOfDay(day)));
+      const timezone = await this.getOrgTimezone(authUser.organizationId);
+      conditions.push(
+        gte(attendanceLogs.punchInAt, startOfDateStringInTimeZone(query.date, timezone)),
+        lt(attendanceLogs.punchInAt, endOfDateStringInTimeZone(query.date, timezone)),
+      );
     }
     const where = and(...conditions);
 
@@ -190,14 +195,19 @@ export class AttendanceService {
     const conditions = [eq(attendanceLogs.organizationId, authUser.organizationId), isNull(attendanceLogs.deletedAt)];
     if (scopedIds) conditions.push(inArray(attendanceLogs.userId, scopedIds));
     if (query.userId) conditions.push(eq(attendanceLogs.userId, query.userId));
-    if (query.date) {
-      const day = parseDateParam(query.date);
-      conditions.push(gte(attendanceLogs.punchInAt, startOfDay(day)), lt(attendanceLogs.punchInAt, endOfDay(day)));
-    } else if (query.startDate && query.endDate) {
-      conditions.push(
-        gte(attendanceLogs.punchInAt, startOfDay(parseDateParam(query.startDate))),
-        lt(attendanceLogs.punchInAt, endOfDay(parseDateParam(query.endDate))),
-      );
+    if (query.date || (query.startDate && query.endDate)) {
+      const timezone = await this.getOrgTimezone(authUser.organizationId);
+      if (query.date) {
+        conditions.push(
+          gte(attendanceLogs.punchInAt, startOfDateStringInTimeZone(query.date, timezone)),
+          lt(attendanceLogs.punchInAt, endOfDateStringInTimeZone(query.date, timezone)),
+        );
+      } else if (query.startDate && query.endDate) {
+        conditions.push(
+          gte(attendanceLogs.punchInAt, startOfDateStringInTimeZone(query.startDate, timezone)),
+          lt(attendanceLogs.punchInAt, endOfDateStringInTimeZone(query.endDate, timezone)),
+        );
+      }
     }
     const where = and(...conditions);
 
@@ -212,6 +222,9 @@ export class AttendanceService {
   /** Today's punch-in rate for the requester's scope: who has punched in at least once today. */
   async todaySummary(authUser: AuthUserContext) {
     const now = new Date();
+    const timezone = await this.getOrgTimezone(authUser.organizationId);
+    const dayStart = startOfDayInTimeZone(now, timezone);
+    const dayEnd = endOfDayInTimeZone(now, timezone);
     const scopedIds = await this.scopedUserIds(authUser);
 
     const people = await this.db.query.users.findMany({
@@ -233,8 +246,8 @@ export class AttendanceService {
         eq(attendanceLogs.organizationId, authUser.organizationId),
         isNull(attendanceLogs.deletedAt),
         inArray(attendanceLogs.userId, scopedPeople.map((p) => p.id)),
-        gte(attendanceLogs.punchInAt, startOfDay(now)),
-        lt(attendanceLogs.punchInAt, endOfDay(now)),
+        gte(attendanceLogs.punchInAt, dayStart),
+        lt(attendanceLogs.punchInAt, dayEnd),
       ),
     });
 
