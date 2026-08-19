@@ -1,5 +1,9 @@
-import "dotenv/config";
+import { config } from "dotenv";
 import { z } from "zod";
+
+// Vitest sets NODE_ENV=test automatically — route to a dedicated test
+// database/Redis DB so running tests never touches dev data.
+config({ path: process.env.NODE_ENV === "test" ? ".env.test" : ".env" });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),

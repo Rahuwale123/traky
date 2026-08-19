@@ -11,8 +11,14 @@ export interface ResolvedRange {
   end: string;
 }
 
+// Deliberately uses the browser's local calendar date, not toISOString() (UTC) —
+// this answers "what day is it for the person looking at the screen right now,"
+// so it must follow their own local clock, not UTC's.
 function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 /** Returns null for "all time" — nothing to filter. */

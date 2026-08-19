@@ -29,10 +29,13 @@ import activityRoutes from "./modules/activities/routes";
 
 export async function buildApp() {
   const app = Fastify({
-    logger: {
-      level: env.NODE_ENV === "production" ? "info" : "debug",
-      transport: env.NODE_ENV === "production" ? undefined : { target: "pino-pretty" },
-    },
+    logger:
+      env.NODE_ENV === "test"
+        ? false
+        : {
+            level: env.NODE_ENV === "production" ? "info" : "debug",
+            transport: env.NODE_ENV === "production" ? undefined : { target: "pino-pretty" },
+          },
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
