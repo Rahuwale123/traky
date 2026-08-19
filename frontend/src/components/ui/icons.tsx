@@ -224,3 +224,22 @@ export function SearchIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function EyeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c6.5 0 10 7 10 7a16.4 16.4 0 0 1-3.2 4.1M6.5 6.6C3.4 8.5 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 3.6-.7" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </svg>
+  );
+}
