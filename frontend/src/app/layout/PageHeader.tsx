@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ChevronRightIcon } from "../../components/ui/icons";
+import { NotificationBell } from "../../features/notifications/components/NotificationBell";
 
 interface PageHeaderProps {
   crumbs: string[];
@@ -21,7 +22,10 @@ export function PageHeader({ crumbs, title, actions }: PageHeaderProps) {
         </div>
         <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-ink">{title}</h1>
       </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      <div className="flex items-center gap-3">
+        {actions}
+        <NotificationBell />
+      </div>
     </div>
   );
 }

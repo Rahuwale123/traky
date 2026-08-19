@@ -125,19 +125,21 @@ export function ConversationThread({ conversationId, onLeft }: ConversationThrea
       </div>
 
       <div className="flex items-end gap-3 border-t border-black/10 px-6 py-4">
-        <Textarea
-          rows={1}
-          value={draft}
-          placeholder="Write a message…"
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          className="max-h-32"
-        />
+        <div className="flex-1">
+          <Textarea
+            rows={1}
+            value={draft}
+            placeholder="Write a message…"
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            className="max-h-32"
+          />
+        </div>
         <Button onClick={submit} disabled={!draft.trim()} isLoading={sendMessage.isPending}>
           Send
         </Button>

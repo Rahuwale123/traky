@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
+import { Modal } from "../../../components/ui/Modal";
 import { Textarea } from "../../../components/ui/Textarea";
 import { NoteIcon } from "../../../components/ui/icons";
 import { getApiErrorMessage } from "../../../lib/api";
@@ -10,7 +11,7 @@ export function EodUpdateWidget() {
   const today = useTodayUpdate();
   const upsert = useUpsertTodayUpdate();
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [summary, setSummary] = useState("");
   const [blockers, setBlockers] = useState("");
   const [planForTomorrow, setPlanForTomorrow] = useState("");
@@ -25,48 +26,51 @@ export function EodUpdateWidget() {
     }
   }, [today.data]);
 
-  const showForm = !hasSubmitted || isEditing;
+  const openModal = () => {
+    upsert.reset();
+    setIsOpen(true);
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!summary.trim()) return;
     upsert.mutate(
       { summary: summary.trim(), blockers: blockers.trim() || null, planForTomorrow: planForTomorrow.trim() || null },
-      { onSuccess: () => setIsEditing(false) },
+      { onSuccess: () => setIsOpen(false) },
     );
   };
 
   return (
-    <Card>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
+    <>
+      <Card className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <span
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${hasSubmitted ? "bg-accent/10 text-accent" : "bg-black/5 text-muted"}`}
           >
             <NoteIcon width={20} height={20} />
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-bold text-ink">Today's EOD update</p>
-            <p className="mt-0.5 text-xs text-muted">
-              {today.isLoading ? "Loading…" : hasSubmitted ? "Submitted" : "Not submitted yet"}
+            <p className="mt-0.5 truncate text-xs text-muted">
+              {today.isLoading ? "Loading…" : hasSubmitted ? today.data!.summary : "Not submitted yet"}
             </p>
           </div>
         </div>
-        {hasSubmitted && !isEditing ? (
-          <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
-            Edit
-          </Button>
-        ) : null}
-      </div>
 
-      {showForm ? (
-        <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit}>
+        <Button variant={hasSubmitted ? "secondary" : "primary"} onClick={openModal}>
+          {hasSubmitted ? "Edit update" : "Submit EOD"}
+        </Button>
+      </Card>
+
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Today's EOD update">
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <Textarea
             label="What did you work on today?"
             placeholder="Summarize today's progress…"
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             required
+            autoFocus
           />
           <Textarea
             label="Any blockers? (optional)"
@@ -89,32 +93,16 @@ export function EodUpdateWidget() {
             </p>
           ) : null}
 
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" isLoading={upsert.isPending}>
+          <div className="mt-1 flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={upsert.isPending}>
               {hasSubmitted ? "Save changes" : "Submit update"}
             </Button>
-            {hasSubmitted ? (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
-                Cancel
-              </Button>
-            ) : null}
           </div>
         </form>
-      ) : today.data ? (
-        <div className="mt-4 flex flex-col gap-2 rounded-2xl bg-black/[0.025] p-4">
-          <p className="text-sm text-ink">{today.data.summary}</p>
-          {today.data.blockers ? (
-            <p className="text-xs text-muted">
-              <span className="font-semibold text-ink-soft">Blockers:</span> {today.data.blockers}
-            </p>
-          ) : null}
-          {today.data.planForTomorrow ? (
-            <p className="text-xs text-muted">
-              <span className="font-semibold text-ink-soft">Tomorrow:</span> {today.data.planForTomorrow}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-    </Card>
+      </Modal>
+    </>
   );
 }
