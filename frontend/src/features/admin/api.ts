@@ -1,5 +1,6 @@
 import { api } from "../../lib/api";
 import type {
+  CreateDesignationPayload,
   CreateEmployeePayload,
   CreateManagerPayload,
   Designation,
@@ -7,6 +8,7 @@ import type {
   Organization,
   OrgUser,
   Paginated,
+  UpdateDesignationPayload,
   UpdateOrganizationPayload,
 } from "./types";
 
@@ -66,8 +68,17 @@ export async function updateUserDesignation(userId: string, designationId: strin
   return res.data.data;
 }
 
-/** Platform-seeded catalog — read-only, no create/update API. */
-export async function fetchDesignations(): Promise<Designation[]> {
-  const res = await api.get<Envelope<Designation[]>>("/designations");
+export async function fetchDesignations(options: { includeInactive?: boolean } = {}): Promise<Designation[]> {
+  const res = await api.get<Envelope<Designation[]>>("/designations", { params: options });
+  return res.data.data;
+}
+
+export async function createDesignation(payload: CreateDesignationPayload): Promise<Designation> {
+  const res = await api.post<Envelope<Designation>>("/designations", payload);
+  return res.data.data;
+}
+
+export async function updateDesignation(id: string, payload: UpdateDesignationPayload): Promise<Designation> {
+  const res = await api.patch<Envelope<Designation>>(`/designations/${id}`, payload);
   return res.data.data;
 }

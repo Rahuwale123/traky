@@ -14,8 +14,21 @@ export interface OrgUser {
 
 export interface Designation {
   id: string;
+  organizationId: string | null;
   name: string;
   category: string;
+  isActive: boolean;
+}
+
+export interface CreateDesignationPayload {
+  name: string;
+  category: string;
+}
+
+export interface UpdateDesignationPayload {
+  name?: string;
+  category?: string;
+  isActive?: boolean;
 }
 
 export interface Organization {

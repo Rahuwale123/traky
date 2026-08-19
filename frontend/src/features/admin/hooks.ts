@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   assignManager,
+  createDesignation,
   createEmployee,
   createManager,
   fetchDesignations,
@@ -8,11 +9,19 @@ import {
   fetchOrganization,
   fetchUser,
   listUsers,
+  updateDesignation,
   updateOrganization,
   updateUserActive,
   updateUserDesignation,
 } from "./api";
-import type { CreateEmployeePayload, CreateManagerPayload, ListUsersParams, UpdateOrganizationPayload } from "./types";
+import type {
+  CreateDesignationPayload,
+  CreateEmployeePayload,
+  CreateManagerPayload,
+  ListUsersParams,
+  UpdateDesignationPayload,
+  UpdateOrganizationPayload,
+} from "./types";
 
 export function useOrganization() {
   return useQuery({ queryKey: ["organization"], queryFn: fetchOrganization });
@@ -94,7 +103,27 @@ export function useUpdateUserDesignation() {
   });
 }
 
-/** Platform-seeded catalog, rarely changes — cache aggressively. */
-export function useDesignations() {
-  return useQuery({ queryKey: ["designations"], queryFn: fetchDesignations, staleTime: 5 * 60_000 });
+/** Rarely changes — cache aggressively. Pass includeInactive for the admin management view. */
+export function useDesignations(options: { includeInactive?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["designations", options],
+    queryFn: () => fetchDesignations(options),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCreateDesignation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateDesignationPayload) => createDesignation(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["designations"] }),
+  });
+}
+
+export function useUpdateDesignation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateDesignationPayload }) => updateDesignation(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["designations"] }),
+  });
 }

@@ -13,6 +13,7 @@ import { BuildingIcon, CopyIcon, ListChecksIcon, UsersIcon } from "../../../comp
 import { formatDate } from "../../../lib/utils";
 import { getApiErrorMessage } from "../../../lib/api";
 import { useOrganization, useUpdateOrganization, useUsers } from "../hooks";
+import { DesignationManager } from "./DesignationManager";
 
 const schema = z.object({
   name: z.string().min(2, "Organization name is required"),
@@ -151,6 +152,8 @@ export function AdminOrgPage() {
           </dl>
         </Card>
       </div>
+
+      <DesignationManager />
     </AppShell>
   );
 }
