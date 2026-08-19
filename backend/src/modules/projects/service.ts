@@ -5,6 +5,7 @@ import { normalizePagination, toPaginated } from "../../utils/response";
 import { NotFoundError } from "../../shared/errors";
 import { assertSameOrg } from "../../middleware/org-scope";
 import { assertOwnTeamResource } from "../../middleware/team-scope";
+import { recordActivity } from "../../shared/audit";
 import type { AuthUserContext } from "../../shared/types";
 import type { CreateProjectInput, ListProjectsQuery, UpdateProjectInput } from "./schemas";
 
@@ -22,6 +23,16 @@ export class ProjectService {
       })
       .returning();
     if (!project) throw new Error("Failed to create project");
+
+    await recordActivity(this.db, {
+      organizationId: authUser.organizationId,
+      actorId: authUser.userId,
+      type: "PROJECT_CREATED",
+      entityType: "project",
+      entityId: project.id,
+      metadata: { name: project.name },
+    });
+
     return project;
   }
 
@@ -78,6 +89,18 @@ export class ProjectService {
       .where(eq(projects.id, id))
       .returning();
     if (!updated) throw new NotFoundError("Project not found");
+
+    if (input.status !== undefined && input.status !== project.status) {
+      await recordActivity(this.db, {
+        organizationId: authUser.organizationId,
+        actorId: authUser.userId,
+        type: "PROJECT_STATUS_CHANGED",
+        entityType: "project",
+        entityId: updated.id,
+        metadata: { name: updated.name, from: project.status, to: updated.status },
+      });
+    }
+
     return updated;
   }
 
@@ -86,5 +109,13 @@ export class ProjectService {
     assertOwnTeamResource(project.managerId, authUser.userId);
 
     await this.db.update(projects).set({ deletedAt: new Date() }).where(eq(projects.id, id));
+    await recordActivity(this.db, {
+      organizationId: authUser.organizationId,
+      actorId: authUser.userId,
+      type: "PROJECT_DELETED",
+      entityType: "project",
+      entityId: project.id,
+      metadata: { name: project.name },
+    });
   }
 }

@@ -20,6 +20,7 @@ import { DailyUpdatesPage } from "../features/daily-updates/components/DailyUpda
 import { MyUpdatesPage } from "../features/daily-updates/components/MyUpdatesPage";
 import { MemberRequestsPage } from "../features/member-requests/components/MemberRequestsPage";
 import { ChatPage } from "../features/chat/components/ChatPage";
+import { ActivityLogPage } from "../features/activities/components/ActivityLogPage";
 
 function HomeRedirect() {
   const user = useAuthStore((s) => s.user);
@@ -99,6 +100,14 @@ export function AppRouter() {
         element={
           <RequireRole role="ADMIN">
             <ChatPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/admin/activity-log"
+        element={
+          <RequireRole role="ADMIN">
+            <ActivityLogPage />
           </RequireRole>
         }
       />

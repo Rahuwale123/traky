@@ -16,6 +16,7 @@ export class UserController {
   createManager = async (request: FastifyRequest, reply: FastifyReply) => {
     const manager = await this.service.createManager(
       request.authUser.organizationId,
+      request.authUser.userId,
       request.body as CreateManagerInput,
     );
     return reply.code(201).send(ok(toSafeUser(manager)));
@@ -52,7 +53,12 @@ export class UserController {
 
   update = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const user = await this.service.update(request.authUser.organizationId, id, request.body as UpdateUserInput);
+    const user = await this.service.update(
+      request.authUser.organizationId,
+      request.authUser.userId,
+      id,
+      request.body as UpdateUserInput,
+    );
     return reply.send(ok(toSafeUser(user)));
   };
 

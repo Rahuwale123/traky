@@ -25,6 +25,7 @@ import dailyUpdateRoutes from "./modules/daily-updates/routes";
 import notificationRoutes from "./modules/notifications/routes";
 import memberRequestRoutes from "./modules/member-requests/routes";
 import chatRoutes from "./modules/chat/routes";
+import activityRoutes from "./modules/activities/routes";
 
 export async function buildApp() {
   const app = Fastify({
@@ -83,6 +84,7 @@ export async function buildApp() {
       await api.register(notificationRoutes, { prefix: "/notifications" });
       await api.register(memberRequestRoutes, { prefix: "/member-requests" });
       await api.register(chatRoutes, { prefix: "/chat" });
+      await api.register(activityRoutes, { prefix: "/activities" });
     },
     { prefix: "/api/v1" },
   );

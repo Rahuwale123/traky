@@ -5,6 +5,7 @@ import { normalizePagination, toPaginated } from "../../utils/response";
 import { BadRequestError, NotFoundError } from "../../shared/errors";
 import { assertSameOrg } from "../../middleware/org-scope";
 import { getActorName, notify } from "../notifications/notify";
+import { recordActivity } from "../../shared/audit";
 import type { AuthUserContext } from "../../shared/types";
 import type { CreateMemberRequestInput, ListMemberRequestsQuery, RespondMemberRequestInput } from "./schemas";
 
@@ -29,6 +30,15 @@ export class MemberRequestService {
       })
       .returning();
     if (!request) throw new Error("Failed to create request");
+
+    await recordActivity(this.db, {
+      organizationId: authUser.organizationId,
+      actorId: authUser.userId,
+      type: "MEMBER_REQUEST_CREATED",
+      entityType: "member_request",
+      entityId: request.id,
+      metadata: { designationName },
+    });
 
     const admins = await this.db.query.users.findMany({
       where: and(eq(users.organizationId, authUser.organizationId), eq(users.role, "ADMIN"), isNull(users.deletedAt)),
@@ -99,6 +109,14 @@ export class MemberRequestService {
       body: `${actorName} ${input.status === "APPROVED" ? "approved" : "declined"} your team member request`,
       entityType: "member_request",
       entityId: updated.id,
+    });
+    await recordActivity(this.db, {
+      organizationId: authUser.organizationId,
+      actorId: authUser.userId,
+      type: "MEMBER_REQUEST_RESPONDED",
+      entityType: "member_request",
+      entityId: updated.id,
+      metadata: { status: input.status },
     });
 
     return updated;

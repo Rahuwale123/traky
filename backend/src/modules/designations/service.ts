@@ -2,6 +2,7 @@ import { and, eq, ilike, isNull, or } from "drizzle-orm";
 import type { Database } from "../../db/client";
 import { designations } from "../../db/schema/index";
 import { ConflictError, ForbiddenError, NotFoundError } from "../../shared/errors";
+import { recordActivity } from "../../shared/audit";
 import type { CreateDesignationInput, ListDesignationsQuery, UpdateDesignationInput } from "./schemas";
 
 export class DesignationService {
@@ -30,7 +31,7 @@ export class DesignationService {
     }
   }
 
-  async create(organizationId: string, input: CreateDesignationInput) {
+  async create(organizationId: string, actorId: string, input: CreateDesignationInput) {
     await this.assertNoCollision(organizationId, input.name);
 
     const [created] = await this.db
@@ -38,10 +39,20 @@ export class DesignationService {
       .values({ organizationId, name: input.name, category: input.category })
       .returning();
     if (!created) throw new Error("Failed to create designation");
+
+    await recordActivity(this.db, {
+      organizationId,
+      actorId,
+      type: "DESIGNATION_CREATED",
+      entityType: "designation",
+      entityId: created.id,
+      metadata: { name: created.name, category: created.category },
+    });
+
     return created;
   }
 
-  async update(organizationId: string, id: string, input: UpdateDesignationInput) {
+  async update(organizationId: string, actorId: string, id: string, input: UpdateDesignationInput) {
     const existing = await this.db.query.designations.findFirst({ where: eq(designations.id, id) });
     if (!existing) throw new NotFoundError("Designation not found");
     // Platform-wide defaults (organizationId NULL) and other orgs' custom
@@ -65,6 +76,16 @@ export class DesignationService {
       .where(eq(designations.id, id))
       .returning();
     if (!updated) throw new Error("Failed to update designation");
+
+    await recordActivity(this.db, {
+      organizationId,
+      actorId,
+      type: "DESIGNATION_UPDATED",
+      entityType: "designation",
+      entityId: updated.id,
+      metadata: { name: updated.name, changes: input },
+    });
+
     return updated;
   }
 }

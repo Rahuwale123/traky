@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Database } from "../../db/client";
 import { organizations } from "../../db/schema/index";
 import { NotFoundError } from "../../shared/errors";
+import { recordActivity } from "../../shared/audit";
 import type { UpdateOrganizationInput } from "./schemas";
 
 export class OrganizationService {
@@ -13,7 +14,7 @@ export class OrganizationService {
     return org;
   }
 
-  async update(organizationId: string, input: UpdateOrganizationInput) {
+  async update(organizationId: string, actorId: string, input: UpdateOrganizationInput) {
     await this.getById(organizationId);
     const [updated] = await this.db
       .update(organizations)
@@ -25,6 +26,16 @@ export class OrganizationService {
       .where(eq(organizations.id, organizationId))
       .returning();
     if (!updated) throw new NotFoundError("Organization not found");
+
+    await recordActivity(this.db, {
+      organizationId,
+      actorId,
+      type: "ORGANIZATION_UPDATED",
+      entityType: "organization",
+      entityId: organizationId,
+      metadata: { changes: input },
+    });
+
     return updated;
   }
 }

@@ -2,6 +2,7 @@ import {
   BuildingIcon,
   ChatIcon,
   ClockIcon,
+  HistoryIcon,
   HomeIcon,
   LayersIcon,
   ListChecksIcon,
@@ -18,6 +19,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Daily Updates", to: "/admin/daily-updates", icon: <NoteIcon /> },
   { label: "Chat", to: "/admin/chat", icon: <ChatIcon />, badge: "chat" },
   { label: "Requests", to: "/admin/member-requests", icon: <UserPlusIcon /> },
+  { label: "Activity Log", to: "/admin/activity-log", icon: <HistoryIcon /> },
   { label: "Organization", to: "/admin/organization", icon: <BuildingIcon /> },
 ];
 

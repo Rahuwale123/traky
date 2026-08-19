@@ -6,6 +6,7 @@ import { BadRequestError, ForbiddenError, NotFoundError } from "../../shared/err
 import { assertSameOrg } from "../../middleware/org-scope";
 import { assertOwnTeamResource } from "../../middleware/team-scope";
 import { getActorName, notify } from "../notifications/notify";
+import { recordActivity } from "../../shared/audit";
 import type { AuthUserContext } from "../../shared/types";
 import type {
   CreateCommentInput,
@@ -60,6 +61,15 @@ export class TaskService {
       })
       .returning();
     if (!task) throw new Error("Failed to create task");
+
+    await recordActivity(this.db, {
+      organizationId: authUser.organizationId,
+      actorId: authUser.userId,
+      type: "TASK_CREATED",
+      entityType: "task",
+      entityId: task.id,
+      metadata: { title: task.title, projectId: task.projectId },
+    });
 
     if (task.assigneeId) {
       const actorName = await getActorName(this.db, authUser.userId);
@@ -168,6 +178,14 @@ export class TaskService {
         entityType: "task",
         entityId: updated.id,
       });
+      await recordActivity(this.db, {
+        organizationId: authUser.organizationId,
+        actorId: authUser.userId,
+        type: "TASK_ASSIGNED",
+        entityType: "task",
+        entityId: updated.id,
+        metadata: { title: updated.title, assigneeId: input.assigneeId },
+      });
     } else if (input.status && input.status !== task.status && updated.assigneeId) {
       await notify(this.db, {
         organizationId: authUser.organizationId,
@@ -178,6 +196,14 @@ export class TaskService {
         body: `${actorName} moved "${updated.title}" to ${STATUS_LABEL[updated.status]}`,
         entityType: "task",
         entityId: updated.id,
+      });
+      await recordActivity(this.db, {
+        organizationId: authUser.organizationId,
+        actorId: authUser.userId,
+        type: "TASK_STATUS_CHANGED",
+        entityType: "task",
+        entityId: updated.id,
+        metadata: { title: updated.title, from: task.status, to: updated.status },
       });
     }
 
@@ -198,6 +224,15 @@ export class TaskService {
     if (!updated) throw new NotFoundError("Task not found");
 
     if (input.status !== task.status) {
+      await recordActivity(this.db, {
+        organizationId: authUser.organizationId,
+        actorId: authUser.userId,
+        type: "TASK_STATUS_CHANGED",
+        entityType: "task",
+        entityId: updated.id,
+        metadata: { title: updated.title, from: task.status, to: updated.status },
+      });
+
       const project = await this.db.query.projects.findFirst({ where: eq(projects.id, updated.projectId) });
       if (project) {
         const actorName = await getActorName(this.db, authUser.userId);
@@ -222,6 +257,14 @@ export class TaskService {
     if (authUser.role !== "MANAGER") throw new ForbiddenError("Only the owning manager can delete this task");
 
     await this.db.update(tasks).set({ deletedAt: new Date() }).where(eq(tasks.id, task.id));
+    await recordActivity(this.db, {
+      organizationId: authUser.organizationId,
+      actorId: authUser.userId,
+      type: "TASK_DELETED",
+      entityType: "task",
+      entityId: task.id,
+      metadata: { title: task.title },
+    });
   }
 
   async listComments(authUser: AuthUserContext, taskId: string) {

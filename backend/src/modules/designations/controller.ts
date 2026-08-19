@@ -12,13 +12,22 @@ export class DesignationController {
   };
 
   create = async (request: FastifyRequest, reply: FastifyReply) => {
-    const created = await this.service.create(request.authUser.organizationId, request.body as CreateDesignationInput);
+    const created = await this.service.create(
+      request.authUser.organizationId,
+      request.authUser.userId,
+      request.body as CreateDesignationInput,
+    );
     return reply.code(201).send(ok(created));
   };
 
   update = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const updated = await this.service.update(request.authUser.organizationId, id, request.body as UpdateDesignationInput);
+    const updated = await this.service.update(
+      request.authUser.organizationId,
+      request.authUser.userId,
+      id,
+      request.body as UpdateDesignationInput,
+    );
     return reply.send(ok(updated));
   };
 }

@@ -12,7 +12,11 @@ export class OrganizationController {
   };
 
   updateMine = async (request: FastifyRequest, reply: FastifyReply) => {
-    const org = await this.service.update(request.authUser.organizationId, request.body as UpdateOrganizationInput);
+    const org = await this.service.update(
+      request.authUser.organizationId,
+      request.authUser.userId,
+      request.body as UpdateOrganizationInput,
+    );
     return reply.send(ok(org));
   };
 }

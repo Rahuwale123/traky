@@ -6,6 +6,7 @@ import { normalizePagination, toPaginated } from "../../utils/response";
 import { ConflictError, NotFoundError, BadRequestError } from "../../shared/errors";
 import { assertSameOrg } from "../../middleware/org-scope";
 import { getActorName, notify } from "../notifications/notify";
+import { recordActivity } from "../../shared/audit";
 import type { AssignManagerInput, CreateEmployeeInput, CreateManagerInput, ListUsersQuery, UpdateUserInput } from "./schemas";
 
 export class UserService {
@@ -22,7 +23,7 @@ export class UserService {
     if (!designation) throw new NotFoundError("Designation not found");
   }
 
-  async createManager(organizationId: string, input: CreateManagerInput) {
+  async createManager(organizationId: string, actorId: string, input: CreateManagerInput) {
     await this.ensureEmailAvailable(input.email);
     if (input.designationId) await this.assertDesignationExists(input.designationId);
 
@@ -39,6 +40,16 @@ export class UserService {
       })
       .returning();
     if (!manager) throw new Error("Failed to create manager");
+
+    await recordActivity(this.db, {
+      organizationId,
+      actorId,
+      type: "USER_CREATED",
+      entityType: "user",
+      entityId: manager.id,
+      metadata: { role: "MANAGER", fullName: manager.fullName, email: manager.email },
+    });
+
     return manager;
   }
 
@@ -67,6 +78,15 @@ export class UserService {
       })
       .returning();
     if (!employee) throw new Error("Failed to create employee");
+
+    await recordActivity(this.db, {
+      organizationId,
+      actorId,
+      type: "USER_CREATED",
+      entityType: "user",
+      entityId: employee.id,
+      metadata: { role: "EMPLOYEE", fullName: employee.fullName, email: employee.email },
+    });
 
     if (employee.managerId) {
       const actorName = await getActorName(this.db, actorId);
@@ -112,8 +132,8 @@ export class UserService {
     return user;
   }
 
-  async update(organizationId: string, id: string, input: UpdateUserInput) {
-    await this.getById(organizationId, id);
+  async update(organizationId: string, actorId: string, id: string, input: UpdateUserInput) {
+    const existing = await this.getById(organizationId, id);
     if (input.designationId) await this.assertDesignationExists(input.designationId);
 
     const [updated] = await this.db
@@ -122,6 +142,28 @@ export class UserService {
       .where(eq(users.id, id))
       .returning();
     if (!updated) throw new NotFoundError("User not found");
+
+    if (input.isActive !== undefined && input.isActive !== existing.isActive) {
+      await recordActivity(this.db, {
+        organizationId,
+        actorId,
+        type: input.isActive ? "USER_REACTIVATED" : "USER_DEACTIVATED",
+        entityType: "user",
+        entityId: id,
+        metadata: { fullName: updated.fullName },
+      });
+    }
+    if (input.designationId !== undefined && input.designationId !== existing.designationId) {
+      await recordActivity(this.db, {
+        organizationId,
+        actorId,
+        type: "USER_DESIGNATION_CHANGED",
+        entityType: "user",
+        entityId: id,
+        metadata: { fullName: updated.fullName, from: existing.designationId, to: input.designationId },
+      });
+    }
+
     return updated;
   }
 
@@ -149,6 +191,14 @@ export class UserService {
       body: `${actorName} assigned ${updated.fullName} to your team`,
       entityType: "user",
       entityId: updated.id,
+    });
+    await recordActivity(this.db, {
+      organizationId,
+      actorId,
+      type: "USER_MANAGER_ASSIGNED",
+      entityType: "user",
+      entityId: updated.id,
+      metadata: { fullName: updated.fullName, managerId: manager.id, managerName: manager.fullName },
     });
 
     return updated;
