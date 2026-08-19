@@ -1,0 +1,24 @@
+{
+  "name": "traky-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dev": "electron .",
+    "build:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.traky.app",
+    "productName": "Traky",
+    "icon": "assets/icon.icns",
+    "files": ["main.js", "package.json"],
+    "mac": {
+      "category": "public.app-category.business",
+      "target": ["dmg", "zip"]
+    }
+  }
+}
