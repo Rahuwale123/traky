@@ -12,6 +12,7 @@ import corsPlugin from "./plugins/cors";
 import rateLimitPlugin from "./plugins/rate-limit";
 import websocketSupport from "./plugins/websocket";
 import mailerPlugin from "./plugins/mailer";
+import helmetPlugin from "./plugins/helmet";
 
 import authRoutes from "./modules/auth/routes";
 import organizationRoutes from "./modules/organizations/routes";
@@ -36,6 +37,7 @@ export async function buildApp() {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  await app.register(helmetPlugin);
   await app.register(corsPlugin);
   await app.register(rateLimitPlugin);
   await app.register(cookiePlugin);
